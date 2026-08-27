@@ -18,6 +18,15 @@ const applicationSchema = new mongoose.Schema(
       type: String,
     },
 
+    resumeFileName: {
+      type: String,
+    },
+
+    coverLetter: {
+      type: String,
+      default: "",
+    },
+
     resumeText: {
       type: String,
     },

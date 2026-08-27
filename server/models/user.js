@@ -23,8 +23,33 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["recruiter", "applicant"],
+      enum: ["recruiter", "candidate"],
       required: true,
+    },
+
+    phone: {
+      type: String,
+      default: "",
+    },
+
+    skills: {
+      type: [String],
+      default: [],
+    },
+
+    experience: {
+      type: String,
+      default: "",
+    },
+
+    education: {
+      type: String,
+      default: "",
+    },
+
+    resumeUrl: {
+      type: String,
+      default: "",
     },
   },
   {
