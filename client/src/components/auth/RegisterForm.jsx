@@ -61,7 +61,13 @@ function RegisterForm() {
     setSubmitting(true)
 
     try {
-      const user = await register(form)
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        role: form.role === 'recruiter' ? 'recruiter' : 'candidate',
+      }
+      const user = await register(payload)
       navigate(user.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard', {
         replace: true,
       })

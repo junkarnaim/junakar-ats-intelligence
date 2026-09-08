@@ -12,8 +12,7 @@ function Register() {
               Create account
             </Typography>
             <Typography color="text.secondary">
-              Choose candidate or recruiter access. Real authentication will be
-              connected through AuthContext and the service layer later.
+              Create a candidate or recruiter account to get started.
             </Typography>
           </Stack>
           <RegisterForm />

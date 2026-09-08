@@ -12,7 +12,7 @@ function Login() {
               Login
             </Typography>
             <Typography color="text.secondary">
-              Access your ATS workspace when backend authentication is connected.
+              Sign in to access your personalised ATS workspace.
             </Typography>
           </Stack>
           <LoginForm />

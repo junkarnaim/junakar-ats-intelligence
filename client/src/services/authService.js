@@ -16,6 +16,11 @@ export const authService = {
     return data
   },
 
+  async updateProfile(payload) {
+    const { data } = await api.put('/auth/profile', payload)
+    return data
+  },
+
   async logout() {
     const { data } = await api.post('/auth/logout')
     return data

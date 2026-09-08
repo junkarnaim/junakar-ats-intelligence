@@ -53,7 +53,10 @@ function LoginForm() {
     setSubmitting(true)
 
     try {
-      const user = await login(form)
+      const user = await login({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      })
       navigate(user.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard', {
         replace: true,
       })

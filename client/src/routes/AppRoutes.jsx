@@ -12,7 +12,9 @@ import JobDetails from '../pages/public/JobDetails'
 import Jobs from '../pages/public/Jobs'
 import Login from '../pages/public/Login'
 import Register from '../pages/public/Register'
+import RecruiterApplications from '../pages/recruiter/RecruiterApplications'
 import RecruiterDashboard from '../pages/recruiter/RecruiterDashboard'
+import RecruiterJobs from '../pages/recruiter/RecruiterJobs'
 import { USER_ROLES } from '../utils/constants'
 
 function AppRoutes() {
@@ -40,6 +42,8 @@ function AppRoutes() {
         <Route element={<RecruiterLayout />} path="recruiter">
           <Route index element={<Navigate replace to="/recruiter/dashboard" />} />
           <Route path="dashboard" element={<RecruiterDashboard />} />
+          <Route path="jobs" element={<RecruiterJobs />} />
+          <Route path="applications" element={<RecruiterApplications />} />
         </Route>
       </Route>
 

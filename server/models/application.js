@@ -52,6 +52,16 @@ const applicationSchema = new mongoose.Schema(
       default: [],
     },
 
+    strengths: {
+      type: [String],
+      default: [],
+    },
+
+    recommendations: {
+      type: [String],
+      default: [],
+    },
+
     experienceMatch: {
       type: Boolean,
     },

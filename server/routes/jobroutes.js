@@ -1,6 +1,7 @@
 const express = require("express");
 const Job = require("../models/job");
 const User = require("../models/user");
+const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -43,12 +44,14 @@ function serializeJob(job) {
     title: job.title,
     company: job.recruiterId?.name ? `${job.recruiterId.name}'s Team` : "ATS Hiring Team",
     recruiter: job.recruiterId?.name || "Recruiter",
+    recruiterId: job.recruiterId?._id || job.recruiterId,
     location: job.location,
     type: "Full-time",
     workplace: job.location === "Remote" ? "Remote" : "Hybrid",
     salary: "Salary disclosed during interview",
     experience: job.experience,
     status: job.status === "active" ? "Active" : "Archived",
+    rawStatus: job.status,
     deadline: job.deadline,
     requiredSkills: job.skills,
     description: job.description,
@@ -89,6 +92,7 @@ async function ensureSeedJobs() {
   );
 }
 
+// GET /api/jobs — list all jobs (public)
 router.get("/", async (req, res) => {
   try {
     await ensureSeedJobs();
@@ -131,6 +135,44 @@ router.get("/", async (req, res) => {
   }
 });
 
+// POST /api/jobs — create a job (recruiter only)
+router.post("/", protect, authorize("recruiter"), async (req, res) => {
+  try {
+    const { title, description, skills, experience, location, deadline } = req.body;
+
+    if (!title || !description || !experience || !location) {
+      return res.status(422).json({
+        success: false,
+        error: "Title, description, experience, and location are required",
+      });
+    }
+
+    const job = await Job.create({
+      title,
+      description,
+      skills: Array.isArray(skills) ? skills : [],
+      experience,
+      location,
+      deadline: deadline ? new Date(deadline) : undefined,
+      status: "active",
+      recruiterId: req.user._id,
+    });
+
+    await job.populate("recruiterId", "name email");
+
+    res.status(201).json({
+      success: true,
+      job: serializeJob(job),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Unable to create job",
+    });
+  }
+});
+
+// GET /api/jobs/:id — get single job (public)
 router.get("/:id", async (req, res) => {
   try {
     const job = await Job.findById(req.params.id).populate("recruiterId", "name email");
@@ -150,6 +192,47 @@ router.get("/:id", async (req, res) => {
     res.status(404).json({
       success: false,
       error: "Job not found",
+    });
+  }
+});
+
+// PATCH /api/jobs/:id — update/archive a job (recruiter, must own it)
+router.patch("/:id", protect, authorize("recruiter"), async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        error: "Job not found",
+      });
+    }
+
+    if (!job.recruiterId.equals(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        error: "You do not have permission to update this job",
+      });
+    }
+
+    const allowedFields = ["title", "description", "skills", "experience", "location", "deadline", "status"];
+    allowedFields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        job[field] = req.body[field];
+      }
+    });
+
+    await job.save();
+    await job.populate("recruiterId", "name email");
+
+    res.json({
+      success: true,
+      job: serializeJob(job),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Unable to update job",
     });
   }
 });

@@ -18,7 +18,6 @@ const upload = multer({
       cb(new Error("Only PDF resumes are supported"));
       return;
     }
-
     cb(null, true);
   },
 });
@@ -45,9 +44,11 @@ function serializeApplication(application) {
       : null,
     resumeFileName: application.resumeFileName,
     coverLetter: application.coverLetter,
-    aiScore: application.aiScore || 0,
+    aiScore: application.aiScore ?? null,
     matchedSkills: application.matchedSkills || [],
     missingSkills: application.missingSkills || [],
+    strengths: application.strengths || [],
+    recommendations: application.recommendations || [],
     experienceMatch: Boolean(application.experienceMatch),
     aiSummary: application.aiSummary || "",
     status: application.status,
@@ -55,6 +56,12 @@ function serializeApplication(application) {
   };
 }
 
+/**
+ * POST /api/applications
+ * Submit a job application with resume PDF.
+ * AI analysis is attempted via the Python service.
+ * If the AI service is unavailable, the application is saved without AI data.
+ */
 router.post(
   "/",
   protect,
@@ -99,17 +106,76 @@ router.post(
         });
       }
 
-      const matchedSkills = job.skills.slice(0, Math.min(3, job.skills.length));
+      // Attempt AI analysis — gracefully degrade if Python service is down
+      let aiData = {
+        aiScore: null,
+        matchedSkills: [],
+        missingSkills: [],
+        strengths: [],
+        recommendations: [],
+        experienceMatch: false,
+        aiSummary: "",
+        resumeText: "",
+      };
+      let aiAvailable = false;
+
+      try {
+        const form = new FormData();
+        form.append("resume", req.file.buffer, {
+          filename: req.file.originalname,
+          contentType: req.file.mimetype,
+        });
+        form.append("jobDescription", job.description || "");
+        // Pass required skills as a comma-separated string for better ATS scoring
+        form.append("requiredSkills", (job.skills || []).join(","));
+
+        const aiResponse = await axios.post(
+          "http://localhost:8000/extract-resume",
+          form,
+          {
+            headers: form.getHeaders(),
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+            timeout: 60000,
+          },
+        );
+
+        const result = aiResponse.data;
+        const analysis = result.aiAnalysis || {};
+
+        aiData = {
+          resumeText: result.text || "",
+          aiScore: analysis.aiScore ?? null,
+          matchedSkills: analysis.matchedSkills || [],
+          missingSkills: analysis.missingSkills || [],
+          strengths: analysis.strengths || [],
+          recommendations: analysis.recommendations || [],
+          experienceMatch: analysis.experienceMatch || false,
+          aiSummary: analysis.aiSummary || "",
+        };
+        aiAvailable = true;
+
+        console.log(`AI analysis complete — score: ${aiData.aiScore}`);
+      } catch (aiError) {
+        console.warn(
+          "AI service unavailable, saving application without AI data:",
+          aiError.message,
+        );
+      }
 
       const application = await Application.create({
         applicantId: req.user._id,
         coverLetter: coverLetter || "",
-        experienceMatch: false,
         jobId,
-        matchedSkills,
-        missingSkills: [],
         resumeFileName: req.file.originalname,
-        resumeText: "",
+        resumeText: aiData.resumeText,
+        aiScore: aiData.aiScore,
+        matchedSkills: aiData.matchedSkills,
+        missingSkills: aiData.missingSkills,
+        strengths: aiData.strengths,
+        recommendations: aiData.recommendations,
+        experienceMatch: aiData.experienceMatch,
+        aiSummary: aiData.aiSummary,
         status: "Applied",
       });
 
@@ -123,6 +189,7 @@ router.post(
       res.status(201).json({
         success: true,
         application: serializeApplication(populatedApplication),
+        aiAvailable,
       });
     } catch (error) {
       const isMulterError = error instanceof multer.MulterError;
@@ -139,6 +206,10 @@ router.post(
   },
 );
 
+/**
+ * GET /api/applications/mine
+ * Returns all applications for the authenticated candidate.
+ */
 router.get("/mine", protect, authorize("candidate"), async (req, res) => {
   try {
     const applications = await Application.find({ applicantId: req.user._id })
@@ -161,6 +232,42 @@ router.get("/mine", protect, authorize("candidate"), async (req, res) => {
   }
 });
 
+/**
+ * GET /api/applications
+ * Returns all applications (recruiter only). Supports ?jobId= filter.
+ */
+router.get("/", protect, authorize("recruiter"), async (req, res) => {
+  try {
+    const filter = {};
+
+    if (req.query.jobId) {
+      filter.jobId = req.query.jobId;
+    }
+
+    const applications = await Application.find(filter)
+      .populate({
+        path: "jobId",
+        populate: { path: "recruiterId", select: "name email" },
+      })
+      .populate("applicantId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      applications: applications.map(serializeApplication),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Unable to load applications",
+    });
+  }
+});
+
+/**
+ * GET /api/applications/:id
+ * Get a single application by ID. Accessible by the owner candidate or any recruiter.
+ */
 router.get("/:id", protect, async (req, res) => {
   try {
     const application = await Application.findById(req.params.id)
@@ -199,99 +306,48 @@ router.get("/:id", protect, async (req, res) => {
   }
 });
 
-router.post("/analyze", upload.single("resume"), async (req, res) => {
+/**
+ * PATCH /api/applications/:id/status
+ * Update the status of an application (recruiter only).
+ */
+router.patch("/:id/status", protect, authorize("recruiter"), async (req, res) => {
   try {
-    // Resume check
-    if (!req.file) {
-      return res.status(400).json({
+    const { status } = req.body;
+    const validStatuses = ["Applied", "Interview", "Offered", "Rejected"];
+
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(422).json({
         success: false,
-        error: "Resume PDF is required",
+        error: `Status must be one of: ${validStatuses.join(", ")}`,
       });
     }
 
-    const jobDescription = req.body.jobDescription || "";
-    const jobId = req.body.jobId;
-    const applicantId = req.body.applicantId;
+    const application = await Application.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true },
+    )
+      .populate({
+        path: "jobId",
+        populate: { path: "recruiterId", select: "name email" },
+      })
+      .populate("applicantId", "name email");
 
-    if (!jobDescription.trim()) {
-      return res.status(400).json({
+    if (!application) {
+      return res.status(404).json({
         success: false,
-        error: "Job description is required",
+        error: "Application not found",
       });
     }
 
-    if (!jobId || !applicantId) {
-      return res.status(400).json({
-        success: false,
-        error: "jobId and applicantId are required",
-      });
-    }
-
-    // Send PDF + job description to Flask
-    const form = new FormData();
-
-    form.append("resume", req.file.buffer, {
-      filename: req.file.originalname,
-      contentType: req.file.mimetype,
-    });
-
-    form.append("jobDescription", jobDescription);
-
-    const aiResponse = await axios.post(
-      "http://localhost:8000/extract-resume",
-      form,
-      {
-        headers: form.getHeaders(),
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-      },
-    );
-
-    const result = aiResponse.data;
-
-    // Save AI result in MongoDB
-    const application = await Application.create({
-      jobId: jobId,
-      applicantId: applicantId,
-
-      resumeText: result.text || "",
-
-      aiScore: result.aiAnalysis?.aiScore || 0,
-
-      matchedSkills: result.aiAnalysis?.matchedSkills || [],
-
-      missingSkills: result.aiAnalysis?.missingSkills || [],
-
-      experienceMatch: result.aiAnalysis?.experienceMatch || false,
-
-      aiSummary: result.aiAnalysis?.aiSummary || "",
-
-      status: "Applied",
-    });
-
-    // Send response to frontend
-    res.status(201).json({
+    res.json({
       success: true,
-
-      applicationId: application._id,
-
-      aiAnalysis: {
-        aiScore: application.aiScore,
-        matchedSkills: application.matchedSkills,
-        missingSkills: application.missingSkills,
-        experienceMatch: application.experienceMatch,
-        aiSummary: application.aiSummary,
-      },
+      application: serializeApplication(application),
     });
   } catch (error) {
-    console.error(
-      "Application analysis error:",
-      error.response?.data || error.message,
-    );
-
     res.status(500).json({
       success: false,
-      error: "Failed to analyze and save application",
+      error: "Unable to update application status",
     });
   }
 });

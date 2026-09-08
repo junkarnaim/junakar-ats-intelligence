@@ -34,6 +34,16 @@ const recruiterItems = [
     path: '/recruiter/dashboard',
     icon: DashboardOutlinedIcon,
   },
+  {
+    label: 'My Jobs',
+    path: '/recruiter/jobs',
+    icon: WorkOutlineOutlinedIcon,
+  },
+  {
+    label: 'Applications',
+    path: '/recruiter/applications',
+    icon: DescriptionOutlinedIcon,
+  },
 ]
 
 function Sidebar({ role = 'candidate', onNavigate }) {

@@ -126,6 +126,128 @@ router.get("/me", protect, (req, res) => {
   });
 });
 
+router.put("/profile", protect, async (req, res) => {
+  try {
+    const { name, phone, education, experience, skills, resumeUrl } = req.body;
+
+    const updates = {};
+
+    if (name !== undefined) {
+      if (typeof name !== "string" || !name.trim()) {
+        return res.status(422).json({
+          success: false,
+          error: "Full name is required",
+        });
+      }
+      updates.name = name.trim();
+    }
+
+    if (phone !== undefined) {
+      updates.phone = String(phone).trim();
+    }
+
+    if (education !== undefined) {
+      updates.education = String(education).trim();
+    }
+
+    if (experience !== undefined) {
+      updates.experience = String(experience).trim();
+    }
+
+    if (resumeUrl !== undefined) {
+      updates.resumeUrl = String(resumeUrl).trim();
+    }
+
+    if (skills !== undefined) {
+      if (Array.isArray(skills)) {
+        updates.skills = skills.map((s) => String(s).trim()).filter(Boolean);
+      } else if (typeof skills === "string") {
+        updates.skills = skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    );
+
+    res.json({
+      success: true,
+      user: serializeUser(updatedUser),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Unable to update profile",
+    });
+  }
+});
+
+router.put("/me", protect, async (req, res) => {
+  try {
+    const { name, phone, education, experience, skills, resumeUrl } = req.body;
+
+    const updates = {};
+
+    if (name !== undefined) {
+      if (typeof name !== "string" || !name.trim()) {
+        return res.status(422).json({
+          success: false,
+          error: "Full name is required",
+        });
+      }
+      updates.name = name.trim();
+    }
+
+    if (phone !== undefined) {
+      updates.phone = String(phone).trim();
+    }
+
+    if (education !== undefined) {
+      updates.education = String(education).trim();
+    }
+
+    if (experience !== undefined) {
+      updates.experience = String(experience).trim();
+    }
+
+    if (resumeUrl !== undefined) {
+      updates.resumeUrl = String(resumeUrl).trim();
+    }
+
+    if (skills !== undefined) {
+      if (Array.isArray(skills)) {
+        updates.skills = skills.map((s) => String(s).trim()).filter(Boolean);
+      } else if (typeof skills === "string") {
+        updates.skills = skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { $set: updates },
+      { new: true, runValidators: true },
+    );
+
+    res.json({
+      success: true,
+      user: serializeUser(updatedUser),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: "Unable to update profile",
+    });
+  }
+});
+
 router.post("/logout", protect, (req, res) => {
   res.json({
     success: true,

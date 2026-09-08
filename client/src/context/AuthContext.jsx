@@ -81,6 +81,15 @@ export function AuthProvider({ children }) {
     queryClient.clear()
   }, [queryClient, token])
 
+  const updateUser = useCallback((userData) => {
+    setUser(userData)
+    if (userData) {
+      localStorage.setItem('ats_user', JSON.stringify(userData))
+    } else {
+      localStorage.removeItem('ats_user')
+    }
+  }, [])
+
   const value = useMemo(
     () => ({
       user,
@@ -90,8 +99,9 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      updateUser,
     }),
-    [user, token, loading, isAuthenticated, logout],
+    [user, token, loading, isAuthenticated, logout, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
