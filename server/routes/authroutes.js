@@ -248,7 +248,7 @@ router.put("/me", protect, async (req, res) => {
   }
 });
 
-router.post("/logout", protect, (req, res) => {
+router.post("/logout", (req, res) => {
   res.json({
     success: true,
     message: "Logged out successfully",

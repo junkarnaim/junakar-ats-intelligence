@@ -66,19 +66,26 @@ export function AuthProvider({ children }) {
   }
 
   const logout = useCallback(async () => {
-    try {
-      if (token) {
-        await authService.logout()
-      }
-    } catch {
-      // Local session cleanup must still happen if a stateless token is already invalid.
-    }
+    const currentToken = token
 
     localStorage.removeItem('ats_token')
     localStorage.removeItem('ats_user')
     setToken(null)
     setUser(null)
-    queryClient.clear()
+
+    try {
+      queryClient.clear()
+    } catch {
+      // Local cache cleanup errors ignored
+    }
+
+    if (currentToken) {
+      try {
+        await authService.logout()
+      } catch {
+        // Stateless token logout on backend is best-effort
+      }
+    }
   }, [queryClient, token])
 
   const updateUser = useCallback((userData) => {

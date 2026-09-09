@@ -5,9 +5,9 @@ import Navbar from '../components/layout/Navbar'
 
 function PublicLayout() {
   return (
-    <Box sx={{ minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar />
-      <Box component="main">
+      <Box component="main" sx={{ flexGrow: 1 }}>
         <Outlet />
       </Box>
       <Footer />

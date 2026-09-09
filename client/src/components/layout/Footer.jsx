@@ -47,17 +47,17 @@ function Footer() {
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <Typography fontWeight={700} gutterBottom>
-              Phase 1 status
+              About
             </Typography>
             <Typography sx={{ color: '#cbd5e1' }}>
-              Public pages, mock job data, routing, MUI theme, and service
-              boundaries are in place for backend integration.
+              AI-powered resume analysis, skill matching, and intelligent
+              candidate ranking to accelerate hiring decisions.
             </Typography>
           </Grid>
         </Grid>
         <Divider sx={{ borderColor: 'rgba(255,255,255,0.16)', my: 4 }} />
         <Typography color="#94a3b8" variant="body2">
-          © 2026 ATS Intelligence. Frontend prototype.
+          © 2026 ATS Intelligence. All rights reserved.
         </Typography>
       </Container>
     </Box>

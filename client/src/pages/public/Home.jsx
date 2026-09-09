@@ -38,7 +38,7 @@ const workflowSteps = [
   {
     title: 'AI ranking supports review',
     description:
-      'The future backend can parse resumes and return match scores, skill gaps, and summaries.',
+      'The AI backend parses resumes and returns match scores, skill gaps, and summaries.',
     icon: AutoAwesomeOutlinedIcon,
   },
 ]
@@ -82,9 +82,9 @@ function Home() {
                 color="text.secondary"
                 sx={{ fontSize: 18, mt: 2.5, maxWidth: 680 }}
               >
-                A professional ATS frontend for recruiters to manage jobs and
-                candidates to apply, designed for upcoming resume parsing and AI
-                match scoring.
+                A complete ATS platform for recruiters to manage jobs and
+                candidates to apply — with AI-powered resume parsing and match
+                scoring.
               </Typography>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mt: 4 }}>
                 <Button
@@ -185,7 +185,7 @@ function Home() {
           <Box>
             <Typography variant="h4">Featured jobs</Typography>
             <Typography color="text.secondary">
-              Active roles with realistic ATS-ready job data.
+              Active roles posted by recruiters on the platform.
             </Typography>
           </Box>
           <Button component={RouterLink} to="/jobs">
@@ -238,7 +238,8 @@ function Home() {
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 1 }}>
                   Discover relevant roles, view clear requirements, and apply
-                  through a focused resume upload workflow in the next phase.
+                  with AI-powered resume analysis that scores your match to
+                  the role.
                 </Typography>
               </CardContent>
             </Card>
@@ -251,7 +252,7 @@ function Home() {
                   For recruiters
                 </Typography>
                 <Typography color="text.secondary" sx={{ mt: 1 }}>
-                  Manage jobs, review applications, and prepare for AI-assisted
+                  Manage jobs, review applications, and leverage AI-assisted
                   ranking, matched skills, missing skills, and summary insights.
                 </Typography>
               </CardContent>
@@ -274,10 +275,10 @@ function Home() {
             spacing={3}
           >
             <Box>
-              <Typography variant="h4">Start with the public workflow</Typography>
+              <Typography variant="h4">Ready to get started?</Typography>
               <Typography sx={{ color: '#cbd5e1', mt: 1 }}>
-                Browse jobs or create an account while recruiter and candidate
-                dashboards are built in the next phase.
+                Create an account to browse jobs, apply with your resume, or
+                post positions as a recruiter.
               </Typography>
             </Box>
             <Button component={RouterLink} to="/register" variant="contained">

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined'
 import {
   Alert,
   Avatar,
@@ -37,6 +38,10 @@ function CandidateProfile() {
   const [saving, setSaving] = useState(false)
   const [dialogError, setDialogError] = useState(null)
   const [successMessage, setSuccessMessage] = useState('')
+
+  // Resume upload state
+  const resumeInputRef = useRef(null)
+  const [resumeUploading, setResumeUploading] = useState(false)
 
   // Form fields
   const [formData, setFormData] = useState({
@@ -148,6 +153,46 @@ function CandidateProfile() {
     }
   }
 
+  const handleResumeSelect = async (event) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.type !== 'application/pdf') {
+      setSuccessMessage('')
+      setError('Please upload a PDF file.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSuccessMessage('')
+      setError('Resume must be 5 MB or smaller.')
+      return
+    }
+
+    try {
+      setResumeUploading(true)
+      setError(null)
+
+      const response = await authService.updateProfile({
+        resumeUrl: file.name,
+      })
+
+      if (response?.user) {
+        setProfile(response.user)
+        updateUser(response.user)
+        setSuccessMessage('Resume updated successfully!')
+      }
+    } catch (err) {
+      setError(getApiErrorMessage(err))
+    } finally {
+      setResumeUploading(false)
+      // Reset input so the same file can be re-selected
+      if (resumeInputRef.current) {
+        resumeInputRef.current.value = ''
+      }
+    }
+  }
+
   const skillsList = Array.isArray(profile?.skills) ? profile.skills : []
 
   if (loading && !profile) {
@@ -210,7 +255,7 @@ function CandidateProfile() {
                 Experience
               </Typography>
               <Typography fontWeight={600}>
-                {profile?.experience || 'Profile experience not added yet'}
+                {profile?.experience || 'Not added yet'}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
@@ -218,16 +263,50 @@ function CandidateProfile() {
                 Education
               </Typography>
               <Typography fontWeight={600}>
-                {profile?.education || 'Education not added yet'}
+                {profile?.education || 'Not added yet'}
               </Typography>
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography color="text.secondary" variant="body2">
                 Resume
               </Typography>
-              <Typography fontWeight={600}>
-                {profile?.resumeUrl || 'Resume will appear after upload support is expanded'}
-              </Typography>
+              {profile?.resumeUrl ? (
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 0.5 }}>
+                  <UploadFileOutlinedIcon color="primary" fontSize="small" />
+                  <Typography fontWeight={600}>{profile.resumeUrl}</Typography>
+                  <Button
+                    disabled={resumeUploading}
+                    onClick={() => resumeInputRef.current?.click()}
+                    size="small"
+                    variant="outlined"
+                  >
+                    Replace
+                  </Button>
+                </Stack>
+              ) : (
+                <Stack spacing={1} sx={{ mt: 0.5 }}>
+                  <Typography color="text.secondary" fontWeight={600}>
+                    No resume uploaded yet
+                  </Typography>
+                  <Button
+                    disabled={resumeUploading}
+                    onClick={() => resumeInputRef.current?.click()}
+                    size="small"
+                    startIcon={resumeUploading ? <CircularProgress size={16} /> : <UploadFileOutlinedIcon />}
+                    variant="contained"
+                    sx={{ alignSelf: 'flex-start' }}
+                  >
+                    {resumeUploading ? 'Uploading…' : 'Upload Resume'}
+                  </Button>
+                </Stack>
+              )}
+              <input
+                accept="application/pdf"
+                hidden
+                ref={resumeInputRef}
+                type="file"
+                onChange={handleResumeSelect}
+              />
             </Grid>
             <Grid item xs={12}>
               <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>

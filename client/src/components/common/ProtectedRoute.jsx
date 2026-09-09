@@ -10,7 +10,7 @@ function ProtectedRoute({ allowedRoles = [] }) {
     return <Loader minHeight={520} />
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate replace to="/login" />
   }
 

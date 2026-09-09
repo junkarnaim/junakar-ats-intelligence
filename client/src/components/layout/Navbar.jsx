@@ -47,9 +47,12 @@ function Navbar() {
     user?.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard'
 
   const handleLogout = async () => {
-    await logout()
-    setMobileOpen(false)
-    navigate('/', { replace: true })
+    try {
+      await logout()
+    } finally {
+      setMobileOpen(false)
+      navigate('/', { replace: true })
+    }
   }
 
   return (

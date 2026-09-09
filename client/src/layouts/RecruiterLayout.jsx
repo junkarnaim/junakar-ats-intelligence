@@ -1,38 +1,101 @@
-import { Box, Button, Container, Stack, Typography } from '@mui/material'
-import { Outlet, useNavigate } from 'react-router-dom'
+import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined'
+import {
+  AppBar,
+  Box,
+  Button,
+  Container,
+  Stack,
+  Tab,
+  Tabs,
+  Toolbar,
+  Typography,
+} from '@mui/material'
+import { Link as RouterLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+
+const navItems = [
+  { label: 'Dashboard', path: '/recruiter/dashboard' },
+  { label: 'My Jobs', path: '/recruiter/jobs' },
+  { label: 'Applications', path: '/recruiter/applications' },
+]
 
 function RecruiterLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { logout, user } = useAuth()
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login', { replace: true })
+    try {
+      await logout()
+    } finally {
+      navigate('/login', { replace: true })
+    }
   }
 
+  const currentTab = navItems.findIndex((item) => location.pathname.startsWith(item.path))
+  const tabValue = currentTab >= 0 ? currentTab : 0
+
   return (
-    <Box sx={{ minHeight: '100vh' }}>
-      <Box
-        sx={{
-          bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider',
-          py: 2,
-        }}
+    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+      <AppBar
+        color="inherit"
+        elevation={0}
+        position="sticky"
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
         <Container maxWidth="lg">
-          <Stack alignItems="center" direction="row" spacing={2}>
-            <Typography variant="h6" sx={{ mr: 'auto' }}>
-              Recruiter Workspace
+          <Toolbar disableGutters sx={{ gap: 2, minHeight: 72 }}>
+            <Stack
+              alignItems="center"
+              component={RouterLink}
+              direction="row"
+              spacing={1.25}
+              to="/recruiter/dashboard"
+              sx={{ color: 'text.primary', mr: 'auto', textDecoration: 'none' }}
+            >
+              <Box
+                sx={{
+                  alignItems: 'center',
+                  bgcolor: 'primary.main',
+                  borderRadius: 2,
+                  color: 'common.white',
+                  display: 'grid',
+                  height: 38,
+                  placeItems: 'center',
+                  width: 38,
+                }}
+              >
+                <WorkOutlineOutlinedIcon fontSize="small" />
+              </Box>
+              <Typography variant="h6">ATS Intelligence</Typography>
+            </Stack>
+            <Typography color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              {user?.name}
             </Typography>
-            <Typography color="text.secondary">{user?.name}</Typography>
-            <Button onClick={handleLogout} variant="outlined">
+            <Button id="recruiter-logout-btn" onClick={handleLogout} type="button" variant="outlined">
               Logout
             </Button>
-          </Stack>
+          </Toolbar>
         </Container>
-      </Box>
+        <Container maxWidth="lg">
+          <Tabs
+            value={tabValue}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{ minHeight: 42 }}
+          >
+            {navItems.map((item) => (
+              <Tab
+                component={RouterLink}
+                key={item.path}
+                label={item.label}
+                to={item.path}
+                sx={{ minHeight: 42, textTransform: 'none', fontWeight: 600 }}
+              />
+            ))}
+          </Tabs>
+        </Container>
+      </AppBar>
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Outlet />
       </Container>
